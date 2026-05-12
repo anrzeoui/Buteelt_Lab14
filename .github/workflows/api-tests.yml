@@ -1,0 +1,46 @@
+# Workflow-ийн нэр
+name: API tests
+
+# Хэзээ ажиллах нөхцөл
+on: [push, pull_request]
+
+jobs:
+  newman:
+    # Ажиллах орчин
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Кодыг татаж авах
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Node.js суулгах
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3. Newman болон нэмэлт хэрэгслүүдийг суулгах
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+
+      # 4. Reports хавтас үүсгэх
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      # 5. Newman тестүүдийг ажиллуулах
+      - name: Run API tests
+        run: |
+          newman run postman/collection.json \
+            -e postman/env.ci.json \
+            --reporters cli,junit,htmlextra \
+            --reporter-junit-export reports/api.xml \
+            --reporter-htmlextra-export reports/api.html
+
+      # 6. Тестийн тайланг файл хэлбэрээр хадгалах
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        if: always() # Тест амжилтгүй болсон ч тайланг татаж авах боломжтой байлгах
+        with:
+          name: api-test-report
+          path: reports/
